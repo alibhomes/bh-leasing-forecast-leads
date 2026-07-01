@@ -1,19 +1,19 @@
-# betterhomes — Leasing Lead Forecast (Team Edition)
+# betterhomes — Leads to Lease Forecast (Team Edition)
 
 A streamlined tool for planning leasing lead volume across a mixed-unit portfolio
 (apartments, townhouses, villas). This is the simplified, team-facing version.
 
 **Two tabs**
-1. **Leads by Unit Type** — historical leads generated + average enquiries to close, by bedroom
-2. **Forecast Calculator** — enter a building's unit mix + timeline → leads required, in total and per month
+1. **Leads by Unit Type** — recent leads generated + average leads to close, by bedroom
+2. **Forecast Calculator** — enter a building's unit mix + timeline → leads needed, in total and per month
 
 > The full internal version (with lead-source breakdowns, portfolio overview and
 > source analysis) is maintained in a separate private repo.
 
 ## Data source
 All figures derive from the `Sheet4` tab of *betterhomes Leasing Inquiries.xlsx*:
-**30,785 leads.** History-repeats model — re-baseline
-the close rates each quarter against fresh closed data, and pad targets 15–25%.
+**30,785 leads in the past 6 months.** Re-baseline
+the close rates each quarter against fresh closed data, and keep a sensible buffer in the plan.
 
 ## How to update
 Everything (data, styling, logic) lives in `index.html`. To change figures, edit the
