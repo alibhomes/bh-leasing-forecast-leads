@@ -12,7 +12,7 @@ A streamlined tool for planning leasing lead volume across a mixed-unit portfoli
 
 ## Data source
 All figures derive from the `Sheet4` tab of *betterhomes Leasing Inquiries.xlsx*:
-**30,785 leads · 5,659 listings · 850 closed leases.** History-repeats model — re-baseline
+**30,785 leads.** History-repeats model — re-baseline
 the close rates each quarter against fresh closed data, and pad targets 15–25%.
 
 ## How to update
