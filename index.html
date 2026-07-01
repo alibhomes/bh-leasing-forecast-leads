@@ -92,6 +92,7 @@ nav{display:flex;gap:38px;padding:22px 0 0;flex-wrap:wrap}
 .btn.solid{background:var(--teal);color:var(--surface);border-color:var(--teal)}
 .btn.solid:hover{background:#0a3d39;color:#fff}
 .btn .ic{font-size:13px}
+.btn.compact{padding:7px 10px;font-size:9.5px;letter-spacing:.12em}
 
 .tip-line{font-size:12px;color:var(--ink-soft);margin:6px 0 20px;display:flex;align-items:center;gap:8px}
 .tip-line .k{border:1px solid var(--line);border-radius:3px;padding:1px 6px;font-family:var(--display);font-size:11px;color:var(--ink)}
@@ -123,6 +124,16 @@ nav{display:flex;gap:38px;padding:22px 0 0;flex-wrap:wrap}
 .caveat{margin-top:6px;padding-top:18px;border-top:1px solid var(--line)}
 .caveat .micro{margin-bottom:8px;display:block}
 .caveat p{font-size:12px;color:var(--ink-soft);line-height:1.6}
+.archive{margin-top:26px;padding-top:22px;border-top:1px solid var(--line)}
+.archive__head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:12px}
+.archive__head h4{font-family:var(--display);font-size:18px;color:var(--ink)}
+.archive-list{display:grid;gap:10px}
+.scenario-card{background:rgba(255,255,255,.45);border:1px solid var(--line);border-radius:2px;padding:14px}
+.scenario-card__top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.scenario-card h5{font-family:var(--display);font-size:16px;font-weight:400;color:var(--teal);line-height:1.2}
+.scenario-card p{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-top:5px}
+.scenario-card__actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.archive-empty{margin-top:4px}
 
 /* RESULTS */
 .result-headline{font-family:var(--display);font-size:20px;line-height:1.4;color:var(--ink);max-width:32em;margin-top:6px}
@@ -184,8 +195,8 @@ table.seg-out tr.tot-row td{font-family:var(--display);color:var(--teal);border-
       <div>
         <div class="scenario-bar">
           <div class="field name">
-            <label>Building / scenario</label>
-            <input type="text" id="bname" value="Building A" spellcheck="false">
+            <label>Scenario name</label>
+            <input type="text" id="bname" value="Building A" placeholder="Building A or Q3 mixed portfolio" spellcheck="false">
           </div>
           <div class="field tl">
             <label>Timeline (months)</label>
@@ -195,6 +206,8 @@ table.seg-out tr.tot-row td{font-family:var(--display);color:var(--teal);border-
 
         <div class="btn-row">
           <button class="btn solid" id="btnExample"><span class="ic">&#9733;</span> Load example &middot; 200 studios + 100 &times; 1-bed</button>
+          <button class="btn" id="btnSave"><span class="ic">&#43;</span> Save scenario</button>
+          <button class="btn" id="btnPdf"><span class="ic">&#8595;</span> Download PDF summary</button>
           <button class="btn" id="btnReset"><span class="ic">&#8635;</span> Reset all</button>
         </div>
         <div class="tip-line"><span>Tip &mdash; click a field to select it, type the number, press <span class="k">Enter</span> to jump to the next. Use <span class="k">&minus;</span> <span class="k">+</span> for small tweaks.</span></div>
@@ -220,6 +233,13 @@ table.seg-out tr.tot-row td{font-family:var(--display);color:var(--teal);border-
           <div class="caveat">
             <span class="micro">Worth knowing</span>
             <p id="methCaveat"></p>
+          </div>
+          <div class="archive">
+            <div class="archive__head">
+              <h4>Scenario archive</h4>
+              <span class="micro" id="archiveCount"></span>
+            </div>
+            <div class="archive-list" id="scenarioArchive"></div>
           </div>
         </div>
       </div>
@@ -285,6 +305,155 @@ const $=id=>document.getElementById(id);
 const nf=n=>Math.round(n).toLocaleString();
 const effClass=cl=>cl<=4?'eff-best':cl>=7.5?'eff-heavy':'eff-mid';
 const effLabel=cl=>cl<=4?'Lower lead need':cl>=7.5?'Higher lead need':cl>=6?'Steady lead need':'Good lead need';
+const STORE_KEY='bh_leads_to_lease_scenarios_v1';
+let activeScenarioId=null;
+
+function esc(v){
+  return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function scenarioName(){return $('bname').value.trim()||'this scenario';}
+function getCurrentUnits(){
+  const units={};
+  SEG.forEach(s=>units[s.id]=getU(s.id));
+  return units;
+}
+function computeFromUnits(units,months){
+  const safeMonths=Math.max(1,parseInt(months)||1);
+  let totU=0,totL=0;
+  const uByType={Apartment:0,Townhouse:0,Villa:0};
+  const seg=[];
+  SEG.forEach(s=>{
+    const n=Math.max(0,parseInt(units[s.id])||0);
+    if(n>0){
+      const leads=n*s.cl;
+      totU+=n;totL+=leads;uByType[s.u]+=n;
+      seg.push({label:s.u+' '+s.b,n,cl:s.cl,leads});
+    }
+  });
+  return {months:safeMonths,totU,totL,monthly:totL/safeMonths,blend:totU>0?totL/totU:0,uByType,seg};
+}
+function currentScenario(){
+  return {
+    id:activeScenarioId,
+    name:scenarioName(),
+    months:Math.max(1,parseInt($('timeline').value)||1),
+    units:getCurrentUnits()
+  };
+}
+function storedScenarios(){
+  try{
+    const parsed=JSON.parse(localStorage.getItem(STORE_KEY)||'[]');
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){return [];}
+}
+function writeScenarios(items){localStorage.setItem(STORE_KEY,JSON.stringify(items));}
+function scenarioId(){return 'scenario_'+Date.now()+'_'+Math.random().toString(16).slice(2);}
+function saveCurrentScenario(){
+  const base=currentScenario();
+  const totals=computeFromUnits(base.units,base.months);
+  if(!totals.totU){window.alert('Add at least one unit before saving a scenario.');return;}
+  const now=new Date().toISOString();
+  const items=storedScenarios();
+  const existing=base.id?items.find(x=>x.id===base.id):null;
+  const saved={...base,id:base.id||scenarioId(),createdAt:existing?.createdAt||now,updatedAt:now};
+  const next=existing?items.map(x=>x.id===saved.id?saved:x):[saved,...items];
+  activeScenarioId=saved.id;
+  writeScenarios(next);
+  renderArchive();
+}
+function loadScenario(id){
+  const item=storedScenarios().find(x=>x.id===id);
+  if(!item)return;
+  activeScenarioId=item.id;
+  $('bname').value=item.name||'Scenario';
+  $('timeline').value=item.months||12;
+  SEG.forEach(s=>$('u_'+s.id).value=item.units?.[s.id]||0);
+  recalc();
+}
+function duplicateScenario(id){
+  const item=storedScenarios().find(x=>x.id===id);
+  if(!item)return;
+  const now=new Date().toISOString();
+  const copy={...item,id:scenarioId(),name:(item.name||'Scenario')+' copy',createdAt:now,updatedAt:now};
+  writeScenarios([copy,...storedScenarios()]);
+  renderArchive();
+}
+function deleteScenario(id){
+  if(!window.confirm('Delete this saved scenario?'))return;
+  writeScenarios(storedScenarios().filter(x=>x.id!==id));
+  if(activeScenarioId===id)activeScenarioId=null;
+  renderArchive();
+}
+function renderArchive(){
+  const host=$('scenarioArchive');
+  if(!host)return;
+  const items=storedScenarios().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+  $('archiveCount').textContent=items.length?items.length+' saved':'';
+  if(!items.length){
+    host.innerHTML='<p class="empty-note archive-empty">No saved scenarios yet.</p>';
+    return;
+  }
+  host.innerHTML=items.map(item=>{
+    const totals=computeFromUnits(item.units||{},item.months||12);
+    return `<article class="scenario-card">
+      <div class="scenario-card__top">
+        <div>
+          <h5>${esc(item.name||'Scenario')}</h5>
+          <p>${nf(totals.totU)} units &middot; ${nf(totals.totL)} leads &middot; ${totals.months} month${totals.months>1?'s':''}</p>
+        </div>
+      </div>
+      <div class="scenario-card__actions">
+        <button class="btn compact" data-act="load" data-id="${esc(item.id)}">View</button>
+        <button class="btn compact" data-act="copy" data-id="${esc(item.id)}">Duplicate</button>
+        <button class="btn compact" data-act="pdf" data-id="${esc(item.id)}">PDF</button>
+        <button class="btn compact" data-act="delete" data-id="${esc(item.id)}">Delete</button>
+      </div>
+    </article>`;
+  }).join('');
+}
+function pdfHtml(scenario){
+  const totals=computeFromUnits(scenario.units||{},scenario.months||12);
+  const date=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const rows=totals.seg.map(r=>`<tr><td>${esc(r.label)}</td><td>${nf(r.n)}</td><td>${r.cl.toFixed(2)}</td><td>${nf(r.leads)}</td><td>${nf(r.leads/totals.months)}</td></tr>`).join('');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(scenario.name||'Scenario')} - Leads to Lease Forecast</title>
+  <style>
+    body{font-family:Arial,sans-serif;color:#1A201E;margin:36px;line-height:1.45}
+    .brand{font-family:Georgia,serif;color:#0C4A45;font-size:24px;margin-bottom:4px}
+    .micro{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#5B635D}
+    h1{font-family:Georgia,serif;font-size:28px;font-weight:400;margin:28px 0 8px}
+    h2{font-family:Georgia,serif;font-size:18px;font-weight:400;margin:28px 0 10px;color:#0C4A45}
+    .lede{color:#5B635D;max-width:680px}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #DAD6CC;margin:22px 0}
+    .kpi{padding:16px;border-left:1px solid #DAD6CC}.kpi:first-child{border-left:none}
+    .val{font-family:Georgia,serif;font-size:28px}.lab{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#5B635D}
+    table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border-bottom:1px solid #DAD6CC;padding:9px;text-align:right}th:first-child,td:first-child{text-align:left}th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#5B635D}
+    .note{border-top:1px solid #DAD6CC;margin-top:26px;padding-top:14px;font-size:12px;color:#5B635D}
+  </style></head><body>
+    <div class="brand">betterhomes</div>
+    <div class="micro">Leads to Lease Forecast &middot; Prepared for Bright Start &middot; ${date}</div>
+    <h1>${esc(scenario.name||'Scenario')}</h1>
+    <p class="lede">A simple planning summary showing how many leads may be needed to lease this unit mix over ${totals.months} month${totals.months>1?'s':''}.</p>
+    <div class="kpis">
+      <div class="kpi"><div class="val">${nf(totals.totU)}</div><div class="lab">Units to lease</div></div>
+      <div class="kpi"><div class="val">${nf(totals.totL)}</div><div class="lab">Total leads required</div></div>
+      <div class="kpi"><div class="val">${nf(totals.monthly)}</div><div class="lab">Leads per month</div></div>
+      <div class="kpi"><div class="val">${totals.totU?totals.blend.toFixed(1):'0'}</div><div class="lab">Leads to lease</div></div>
+    </div>
+    <h2>Leads required by segment</h2>
+    <table><thead><tr><th>Segment</th><th>Units</th><th>Leads to lease</th><th>Leads needed</th><th>Per month</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="note">Based on 30,785 betterhomes leasing leads from the past 6 months. Use as a planning guide, build in a sensible buffer, and refresh the benchmark each quarter.</p>
+  </body></html>`;
+}
+function downloadPdfSummary(scenario=currentScenario()){
+  const totals=computeFromUnits(scenario.units||{},scenario.months||12);
+  if(!totals.totU){window.alert('Add at least one unit before downloading a PDF summary.');return;}
+  const win=window.open('','_blank');
+  if(!win){window.alert('Please allow pop-ups to create the PDF summary.');return;}
+  win.document.write(pdfHtml(scenario));
+  win.document.close();
+  win.focus();
+  setTimeout(()=>win.print(),300);
+}
 
 // ===== TAB 01 =====
 function buildBands(){
@@ -332,25 +501,25 @@ function buildMethod(){
 function getU(id){const v=parseInt($('u_'+id).value);return isNaN(v)||v<0?0:v;}
 function recalc(){
   const months=Math.max(1,parseInt($('timeline').value)||1);
-  const name=$('bname').value.trim()||'this portfolio';
-  let totU=0,totL=0;const uByType={Apartment:0,Townhouse:0,Villa:0};const seg=[];
+  const name=scenarioName();
+  const units=getCurrentUnits();
+  const totals=computeFromUnits(units,months);
   SEG.forEach(s=>{
-    const n=getU(s.id);
+    const n=units[s.id]||0;
     const row=$('row-'+s.id); if(row)row.classList.toggle('filled',n>0);
-    if(n>0){const leads=n*s.cl;totU+=n;totL+=leads;uByType[s.u]+=n;seg.push({label:s.u+' '+s.b,n,cl:s.cl,leads});}
   });
-  ['Apartment','Townhouse','Villa'].forEach(u=>$('bt-'+u).textContent=nf(uByType[u]));
-  $('r_units').textContent=nf(totU);
-  $('r_leads').textContent=nf(totL);
+  ['Apartment','Townhouse','Villa'].forEach(u=>$('bt-'+u).textContent=nf(totals.uByType[u]));
+  $('r_units').textContent=nf(totals.totU);
+  $('r_leads').textContent=nf(totals.totL);
   $('r_leads_sub').textContent='over '+months+' month'+(months>1?'s':'');
-  $('r_monthly').textContent=nf(totL/months);
-  $('r_blend').textContent=totU>0?(totL/totU).toFixed(1):'0';
+  $('r_monthly').textContent=nf(totals.monthly);
+  $('r_blend').textContent=totals.totU>0?totals.blend.toFixed(1):'0';
 
-  if(totU>0){
-    $('resHeadline').innerHTML=`To lease <b>${nf(totU)}</b> units in <b>${name}</b> over <b>${months}</b> month${months>1?'s':''}, the team should plan for around <b>${nf(totL)}</b> leads, or about <b>${nf(totL/months)}</b> per month.`;
+  if(totals.totU>0){
+    $('resHeadline').innerHTML=`To lease <b>${nf(totals.totU)}</b> units for <b>${esc(name)}</b> over <b>${months}</b> month${months>1?'s':''}, the team should plan for around <b>${nf(totals.totL)}</b> leads, or about <b>${nf(totals.monthly)}</b> per month.`;
     let h='<div class="seg-out-wrap"><table class="seg-out"><thead><tr><th><span class="micro">Segment</span></th><th class="r"><span class="micro">Units</span></th><th class="r"><span class="micro">Leads to lease</span></th><th class="r"><span class="micro">Leads needed</span></th><th class="r"><span class="micro">Per month</span></th></tr></thead><tbody>';
-    seg.forEach(r=>{h+=`<tr><td>${r.label}</td><td>${nf(r.n)}</td><td>${r.cl.toFixed(2)}</td><td>${nf(r.leads)}</td><td>${nf(r.leads/months)}</td></tr>`;});
-    h+=`<tr class="tot-row"><td>Total</td><td>${nf(totU)}</td><td>&mdash;</td><td>${nf(totL)}</td><td>${nf(totL/months)}</td></tr></tbody></table></div>`;
+    totals.seg.forEach(r=>{h+=`<tr><td>${esc(r.label)}</td><td>${nf(r.n)}</td><td>${r.cl.toFixed(2)}</td><td>${nf(r.leads)}</td><td>${nf(r.leads/months)}</td></tr>`;});
+    h+=`<tr class="tot-row"><td>Total</td><td>${nf(totals.totU)}</td><td>&mdash;</td><td>${nf(totals.totL)}</td><td>${nf(totals.monthly)}</td></tr></tbody></table></div>`;
     $('segOutHost').innerHTML=h;
   }else{
     $('resHeadline').innerHTML='';
@@ -383,10 +552,24 @@ function wire(){
   $('timeline').addEventListener('input',recalc);
   $('timeline').addEventListener('focus',()=>$('timeline').select());
   $('bname').addEventListener('input',recalc);
-  $('btnReset').addEventListener('click',()=>{$('bname').value='Building A';$('timeline').value=12;setAll({});$('u_'+SEG[0].id).focus();});
-  $('btnExample').addEventListener('click',()=>{$('timeline').value=12;setAll(EXAMPLE);});
+  $('btnSave').addEventListener('click',saveCurrentScenario);
+  $('btnPdf').addEventListener('click',()=>downloadPdfSummary());
+  $('btnReset').addEventListener('click',()=>{activeScenarioId=null;$('bname').value='Building A';$('timeline').value=12;setAll({});$('u_'+SEG[0].id).focus();});
+  $('btnExample').addEventListener('click',()=>{activeScenarioId=null;$('timeline').value=12;setAll(EXAMPLE);});
+  $('scenarioArchive').addEventListener('click',e=>{
+    const btn=e.target.closest('button[data-act]');
+    if(!btn)return;
+    const id=btn.dataset.id;
+    if(btn.dataset.act==='load')loadScenario(id);
+    if(btn.dataset.act==='copy')duplicateScenario(id);
+    if(btn.dataset.act==='pdf'){
+      const item=storedScenarios().find(x=>x.id===id);
+      if(item)downloadPdfSummary(item);
+    }
+    if(btn.dataset.act==='delete')deleteScenario(id);
+  });
 }
 
 // ===== INIT =====
-buildBands();buildInputs();buildMethod();wire();setAll(EXAMPLE);
+buildBands();buildInputs();buildMethod();wire();setAll(EXAMPLE);renderArchive();
 </script>
