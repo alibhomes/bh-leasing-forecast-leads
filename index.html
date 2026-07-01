@@ -1,0 +1,392 @@
+<title>betterhomes — Leasing Lead Forecast</title>
+<style>
+:root{
+  --bg:#F4F2EC; --surface:#FBFAF6; --ink:#1A201E; --ink-soft:#5B635D; --line:#DAD6CC;
+  --gold:#9A7B3F; --teal:#0C4A45;
+  --display:'Hoefler Text','Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Garamond,Georgia,'Times New Roman',serif;
+  --body:system-ui,-apple-system,'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.figure{font-family:var(--display);font-variant-numeric:tabular-nums lining-nums;font-feature-settings:'lnum' 1,'tnum' 1;font-weight:400}
+.serif{font-family:var(--display);font-weight:400}
+.micro{font-size:10.5px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+
+.wrap{max-width:1120px;margin:0 auto;padding:0 64px}
+@media(max-width:880px){.wrap{padding:0 24px}}
+
+.masthead{padding:30px 0 18px;display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:11px}
+.brand-mark{width:9px;height:9px;background:var(--gold);display:inline-block;transform:translateY(-1px)}
+.brand-name{font-family:var(--display);font-size:25px;letter-spacing:-.01em;color:var(--teal)}
+.masthead-meta{text-align:right;line-height:1.7}
+.brass-rule{height:1px;background:var(--gold);width:100%}
+
+nav{display:flex;gap:38px;padding:22px 0 0;flex-wrap:wrap}
+.tab{background:none;border:none;cursor:pointer;padding:0 0 14px;font-family:var(--body);text-align:left;border-bottom:2px solid transparent;transition:border-color .25s}
+.tab .num{font-family:var(--display);font-size:13px;color:var(--gold);margin-right:8px}
+.tab .lbl{font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);transition:color .25s}
+.tab:hover .lbl{color:var(--ink)}
+.tab.active{border-bottom-color:var(--gold)}
+.tab.active .lbl{color:var(--ink)}
+.nav-rule{height:1px;background:var(--line)}
+
+.pane{display:none;padding:54px 0 30px;animation:fade .5s ease}
+.pane.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.eyebrow{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.eyebrow .secnum{font-family:var(--display);font-size:15px;color:var(--gold)}
+.sec-title{font-family:var(--display);font-size:30px;letter-spacing:-.01em;line-height:1.15;margin-bottom:16px;max-width:20em}
+.lede{font-size:15px;color:var(--ink-soft);max-width:48em;line-height:1.65}
+.lede strong{color:var(--ink);font-weight:500}
+.band{margin-top:60px}
+.reading-guide{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);display:flex;gap:30px;flex-wrap:wrap}
+.rg-item{display:flex;gap:8px;align-items:baseline}
+
+/* LEDGER KPI */
+.ledger{display:grid;background:var(--surface);border:1px solid var(--line);border-radius:2px;margin-top:24px}
+.ledger.cols-4{grid-template-columns:repeat(4,1fr)}
+.ledger .cell{padding:26px 30px;border-left:1px solid var(--line)}
+.ledger .cell:first-child{border-left:none}
+.ledger .val{font-family:var(--display);font-variant-numeric:tabular-nums lining-nums;font-size:40px;line-height:1;margin-bottom:12px;color:var(--ink)}
+.ledger .val small{font-size:17px;color:var(--ink-soft)}
+.ledger .sub{font-size:11px;color:var(--ink-soft);margin-top:5px}
+@media(max-width:760px){.ledger.cols-4{grid-template-columns:repeat(2,1fr)}.ledger .cell{border-left:none;border-top:1px solid var(--line)}.ledger.cols-4 .cell:nth-child(-n+2){border-top:none}}
+
+/* UNIT BAND / TABLE */
+.unit-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+.unit-name{font-family:var(--display);font-size:23px;color:var(--teal)}
+.unit-tot{margin-left:auto;text-align:right}
+.unit-insight{font-size:14px;color:var(--ink-soft);max-width:54em;margin:12px 0 4px;line-height:1.6}
+.unit-insight b{color:var(--ink);font-weight:500;border-bottom:1px solid var(--gold);padding-bottom:1px}
+
+.seg-table{width:100%;border-collapse:collapse;margin-top:16px}
+.seg-table th{text-align:left;padding:0 0 12px;border-bottom:1px solid var(--line)}
+.seg-table th.r{text-align:right}
+.seg-table td{padding:17px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+.seg-table tr:last-child td{border-bottom:none}
+.seg-bed{font-family:var(--display);font-size:18px}
+.seg-num{font-family:var(--display);font-variant-numeric:tabular-nums lining-nums;font-size:19px;text-align:right}
+.seg-close{text-align:right;white-space:nowrap}
+.seg-close .cv{font-family:var(--display);font-size:19px}
+.eff-tag{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;display:inline-block;margin-top:3px}
+.eff-best{color:var(--teal)} .eff-mid{color:var(--ink-soft)} .eff-heavy{color:#B5763E}
+@media(max-width:640px){.seg-table thead{display:none}.seg-table td{display:flex;justify-content:space-between;border:none;padding:5px 0}.seg-table td::before{content:attr(data-l);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}.seg-table tr{display:block;padding:16px 0;border-bottom:1px solid var(--line)}.seg-num,.seg-close{text-align:right}}
+
+/* CALCULATOR */
+.calc-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;margin-top:24px}
+@media(max-width:880px){.calc-grid{grid-template-columns:1fr;gap:36px}}
+
+.scenario-bar{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:8px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:10.5px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+.field input{border:none;border-bottom:1.5px solid var(--gold);background:none;font-family:var(--display);font-size:20px;color:var(--ink);padding:3px 2px}
+.field input:focus{outline:none}
+.field.name input{font-family:var(--body);font-size:16px;min-width:180px;border-bottom-color:var(--ink-soft)}
+.field.tl input{width:70px;text-align:center;font-variant-numeric:tabular-nums}
+
+.btn-row{display:flex;gap:12px;margin:22px 0 6px;flex-wrap:wrap}
+.btn{font-family:var(--body);font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:none;border:1px solid var(--line);border-radius:2px;padding:10px 16px;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:var(--gold);color:var(--teal)}
+.btn.solid{background:var(--teal);color:var(--surface);border-color:var(--teal)}
+.btn.solid:hover{background:#0a3d39;color:#fff}
+.btn .ic{font-size:13px}
+
+.tip-line{font-size:12px;color:var(--ink-soft);margin:6px 0 20px;display:flex;align-items:center;gap:8px}
+.tip-line .k{border:1px solid var(--line);border-radius:3px;padding:1px 6px;font-family:var(--display);font-size:11px;color:var(--ink)}
+
+.input-block{margin-bottom:24px}
+.input-block .ib-title{display:flex;align-items:baseline;gap:10px;padding-bottom:9px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.input-block .ib-title .nm{font-family:var(--display);font-size:16px;color:var(--teal)}
+.input-block .ib-title .bt{margin-left:auto;font-size:11px;color:var(--ink-soft)}
+.input-block .ib-title .bt b{font-family:var(--display);color:var(--ink);font-size:13px}
+.in-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);border-left:2px solid transparent;transition:background .15s,border-color .15s}
+.in-row:last-child{border-bottom:none}
+.in-row.filled{background:rgba(12,74,69,.045);border-left-color:var(--teal)}
+.in-row .lab{font-size:13.5px;color:var(--ink)}
+.in-row .lab .hint{font-size:10.5px;color:var(--ink-soft);margin-left:8px}
+.in-row .field-wrap{display:flex;align-items:center;gap:8px}
+.step-btn{width:26px;height:26px;border:1px solid var(--line);background:var(--surface);border-radius:2px;cursor:pointer;font-family:var(--display);font-size:15px;color:var(--ink-soft);line-height:1;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.step-btn:hover{border-color:var(--gold);color:var(--teal)}
+.in-row input.u{width:78px;border:none;border-bottom:1px solid var(--ink-soft);background:none;font-family:var(--display);font-variant-numeric:tabular-nums lining-nums;font-size:18px;text-align:right;color:var(--ink);padding:3px 4px}
+.in-row input.u:focus{outline:none;border-bottom-color:var(--gold)}
+.in-row.filled input.u{color:var(--teal)}
+
+/* METHOD */
+.method{background:var(--surface);border:1px solid var(--line);border-radius:2px;padding:30px;position:sticky;top:20px}
+.method h4{font-family:var(--display);font-size:18px;margin-bottom:18px;color:var(--ink)}
+.step{display:flex;gap:14px;margin-bottom:18px}
+.step .sn{font-family:var(--display);font-size:14px;color:var(--gold);flex-shrink:0;width:18px}
+.step .st{font-size:12.5px;color:var(--ink-soft);line-height:1.55}
+.step .st b{color:var(--ink);font-weight:500}
+.caveat{margin-top:6px;padding-top:18px;border-top:1px solid var(--line)}
+.caveat .micro{margin-bottom:8px;display:block}
+.caveat p{font-size:12px;color:var(--ink-soft);line-height:1.6}
+
+/* RESULTS */
+.result-headline{font-family:var(--display);font-size:20px;line-height:1.4;color:var(--ink);max-width:32em;margin-top:6px}
+.result-headline b{color:var(--teal)}
+.seg-out-wrap{overflow-x:auto;margin-top:30px;border:1px solid var(--line);border-radius:2px;background:var(--surface)}
+table.seg-out{width:100%;border-collapse:collapse;min-width:520px}
+table.seg-out th{padding:15px 16px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+table.seg-out th:first-child{text-align:left}
+table.seg-out td{padding:13px 16px;text-align:right;font-family:var(--display);font-variant-numeric:tabular-nums lining-nums;font-size:14px;border-bottom:1px solid var(--line)}
+table.seg-out td:first-child{text-align:left;font-family:var(--body);font-size:13px}
+table.seg-out tr:last-child td{border-bottom:none}
+table.seg-out tr.tot-row td{font-family:var(--display);color:var(--teal);border-top:1px solid var(--ink-soft)}
+.empty-note{margin-top:24px;font-size:13px;color:var(--ink-soft);font-style:italic}
+
+.colophon{margin-top:70px;padding:24px 0 50px;border-top:1px solid var(--line)}
+.colophon .micro{line-height:2}
+</style>
+
+<h2 class="sr-only">betterhomes leasing lead forecast: historical leads by unit type and a lead-volume calculator</h2>
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="brand"><span class="brand-mark"></span><span class="brand-name">betterhomes</span></div>
+    <div class="masthead-meta">
+      <div class="micro">Leasing Lead Forecast &middot; Portfolio Planning</div>
+      <div class="micro" style="opacity:.7">Confidential &middot; Prepared for the Board</div>
+    </div>
+  </div>
+  <div class="brass-rule"></div>
+
+  <nav>
+    <button class="tab active" data-tab="units"><span class="num">01</span><span class="lbl">Leads by Unit Type</span></button>
+    <button class="tab" data-tab="forecast"><span class="num">02</span><span class="lbl">Forecast Calculator</span></button>
+  </nav>
+  <div class="nav-rule"></div>
+
+  <!-- ===== TAB 01 ===== -->
+  <section class="pane active" id="pane-units">
+    <div class="eyebrow"><span class="secnum">01</span><span class="micro">Historical leads generated by unit type</span></div>
+    <h3 class="sec-title">What each unit type generates &amp; how many leads it takes to close</h3>
+    <p class="lede">Total leasing enquiries recorded in the dataset, by unit and bedroom, alongside the average number of enquiries needed to sign one lease. This is the historical base the calculator runs on.</p>
+    <div class="reading-guide">
+      <div class="rg-item"><span class="micro">Total leads</span><span style="font-size:12px;color:var(--ink-soft)">enquiries generated over the recorded period</span></div>
+      <div class="rg-item"><span class="micro">Avg &rarr; Close</span><span style="font-size:12px;color:var(--ink-soft)">enquiries needed per signed lease &middot; lower is better</span></div>
+    </div>
+
+    <div class="band" id="band-Apartment"></div>
+    <div class="band" id="band-Townhouse"></div>
+    <div class="band" id="band-Villa"></div>
+  </section>
+
+  <!-- ===== TAB 02 ===== -->
+  <section class="pane" id="pane-forecast">
+    <div class="eyebrow"><span class="secnum">02</span><span class="micro">Lead-volume forecast</span></div>
+    <h3 class="sec-title">How many leads will this building need?</h3>
+    <p class="lede">Enter the unit mix for a building or portfolio and the period you want to lease it over. The model uses <strong>betterhomes' own historical close rates</strong> to return the leads you must plan for &mdash; in total and per month.</p>
+
+    <div class="calc-grid">
+      <div>
+        <div class="scenario-bar">
+          <div class="field name">
+            <label>Building / scenario</label>
+            <input type="text" id="bname" value="Building A" spellcheck="false">
+          </div>
+          <div class="field tl">
+            <label>Timeline (months)</label>
+            <input type="number" id="timeline" value="12" min="1" max="60" inputmode="numeric">
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn solid" id="btnExample"><span class="ic">&#9733;</span> Load example &middot; 200 studios + 100 &times; 1-bed</button>
+          <button class="btn" id="btnReset"><span class="ic">&#8635;</span> Reset all</button>
+        </div>
+        <div class="tip-line"><span>Tip &mdash; click a field to select it, type the number, press <span class="k">Enter</span> to jump to the next. Use <span class="k">&minus;</span> <span class="k">+</span> for small tweaks.</span></div>
+
+        <div class="input-block">
+          <div class="ib-title"><span class="nm">Apartments</span><span class="bt">units: <b id="bt-Apartment">0</b></span></div>
+          <div id="in-Apartment"></div>
+        </div>
+        <div class="input-block">
+          <div class="ib-title"><span class="nm">Townhouses</span><span class="bt">units: <b id="bt-Townhouse">0</b></span></div>
+          <div id="in-Townhouse"></div>
+        </div>
+        <div class="input-block">
+          <div class="ib-title"><span class="nm">Villas</span><span class="bt">units: <b id="bt-Villa">0</b></span></div>
+          <div id="in-Villa"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="method">
+          <h4 id="methTitle"></h4>
+          <div id="methSteps"></div>
+          <div class="caveat">
+            <span class="micro">Read this before you present</span>
+            <p id="methCaveat"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="eyebrow"><span class="secnum" style="font-size:13px">&mdash;</span><span class="micro">Forecast output</span></div>
+      <p class="result-headline" id="resHeadline"></p>
+      <div class="ledger cols-4">
+        <div class="cell"><div class="val figure" id="r_units">0</div><span class="micro">Units to lease</span></div>
+        <div class="cell"><div class="val figure" id="r_leads">0</div><span class="micro">Total leads required</span><div class="sub" id="r_leads_sub"></div></div>
+        <div class="cell"><div class="val figure" id="r_monthly">0</div><span class="micro">Leads per month</span><div class="sub">across the timeline</div></div>
+        <div class="cell"><div class="val figure" id="r_blend">0</div><span class="micro">Leads per lease</span><div class="sub">blended for this mix</div></div>
+      </div>
+
+      <div class="band">
+        <div class="eyebrow"><span class="secnum" style="font-size:13px">&mdash;</span><span class="micro">Leads required by segment</span></div>
+        <div id="segOutHost"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="colophon">
+    <div class="micro">Source &middot; betterhomes Leasing Inquiries.xlsx &middot; tab Sheet4</div>
+    <div class="micro" style="opacity:.7">30,785 leads &middot; 5,659 listings &middot; 850 closed leases &middot; history-repeats model &middot; re-baseline quarterly</div>
+  </div>
+</div>
+
+<script>
+// ===== DATA (from Sheet4): bedroom, total leads, avg-to-close =====
+const SEG = [
+  {id:'apt_studio',u:'Apartment',b:'Studio', t:2956, cl:8.49},
+  {id:'apt_1bed',  u:'Apartment',b:'1 Bed',  t:9405, cl:7.34},
+  {id:'apt_2bed',  u:'Apartment',b:'2 Bed',  t:7167, cl:7.79},
+  {id:'apt_3bed',  u:'Apartment',b:'3 Bed',  t:2656, cl:5.38},
+  {id:'apt_4bed',  u:'Apartment',b:'4 Bed',  t:241,  cl:5.17},
+  {id:'apt_5bed',  u:'Apartment',b:'5+ Beds',t:23,   cl:10.0},
+  {id:'th_3bed',   u:'Townhouse',b:'3 Bed',  t:2396, cl:7.04},
+  {id:'th_4bed',   u:'Townhouse',b:'4 Bed',  t:1297, cl:7.56},
+  {id:'th_5bed',   u:'Townhouse',b:'5+ Beds',t:49,   cl:1.5},
+  {id:'vil_3bed',  u:'Villa',    b:'3 Bed',  t:1156, cl:2.96},
+  {id:'vil_4bed',  u:'Villa',    b:'4 Bed',  t:1638, cl:5.43},
+  {id:'vil_5bed',  u:'Villa',    b:'5+ Beds',t:1801, cl:7.92}
+];
+const UNIT_TOT={Apartment:22448,Townhouse:3742,Villa:4595};
+const EXAMPLE={apt_studio:200,apt_1bed:100};
+const COPY={
+  insights:{
+    Apartment:"Apartments are the least lead-efficient class &mdash; studios need <b>8.49 leads per lease</b>, 1BR/2BR sit at 7.34/7.79. Plan for high lead volume; the <b>3-bed (5.38)</b> is the efficient outlier.",
+    Townhouse:"Townhouses stay lead-heavy: 3BR needs 7.04 and 4BR actually worsens to <b>7.56</b> &mdash; size buys no efficiency here.",
+    Villa:"Villa <b>3-bed is the efficiency engine at 2.96 leads per lease</b> &mdash; but it isn't linear: 4BR rises to 5.43 and 5+ to 7.92."
+  },
+  method_title:"How the calculator works",
+  method_steps:[
+    "<b>Set the goal.</b> Enter how many units of each bedroom type you need to lease &mdash; e.g. 200 studios + 100 one-beds in a building.",
+    "<b>Convert leases into leads.</b> Each unit is multiplied by that segment's historical leads-to-close. 200 studios &times; 8.49 &asymp; 1,698 leads; 100 one-beds &times; 7.34 &asymp; 734.",
+    "<b>Set the pace.</b> The total is divided by your timeline to give the monthly lead target your team must actually generate and handle."
+  ],
+  caveat:"A history-repeats model: it assumes future close rates match the past. Because leads-to-close is measured only on listings that <em>did</em> close, real lead needs run higher &mdash; treat the output as an optimistic floor, pad it 15&ndash;25%, and re-baseline each quarter."
+};
+
+const $=id=>document.getElementById(id);
+const nf=n=>Math.round(n).toLocaleString();
+const effClass=cl=>cl<=4?'eff-best':cl>=7.5?'eff-heavy':'eff-mid';
+const effLabel=cl=>cl<=4?'Most efficient':cl>=7.5?'Volume-hungry':cl>=6?'Lead-heavy':'Efficient';
+
+// ===== TAB 01 =====
+function buildBands(){
+  ['Apartment','Townhouse','Villa'].forEach(u=>{
+    const rows=SEG.filter(s=>s.u===u);
+    let h=`<div class="unit-head"><span class="unit-name">${u}s</span>
+      <span class="unit-tot"><span class="figure" style="font-size:17px">${nf(UNIT_TOT[u])}</span> <span class="micro">leads generated</span></span></div>`;
+    h+=`<p class="unit-insight">${COPY.insights[u]}</p>`;
+    h+=`<table class="seg-table"><thead><tr>
+      <th><span class="micro">Bedroom</span></th>
+      <th class="r"><span class="micro">Total leads</span></th>
+      <th class="r"><span class="micro">Avg &rarr; Close</span></th></tr></thead><tbody>`;
+    rows.forEach(s=>{
+      h+=`<tr>
+        <td class="seg-bed" data-l="Bedroom">${s.b}</td>
+        <td class="seg-num" data-l="Total leads">${nf(s.t)}</td>
+        <td class="seg-close" data-l="Avg to close"><span class="cv">${s.cl.toFixed(2)}</span><br><span class="eff-tag ${effClass(s.cl)}">${effLabel(s.cl)}</span></td>
+      </tr>`;
+    });
+    h+='</tbody></table>';
+    $('band-'+u).innerHTML=h;
+  });
+}
+
+// ===== TAB 02 — CALCULATOR =====
+function buildInputs(){
+  ['Apartment','Townhouse','Villa'].forEach(u=>{
+    const rows=SEG.filter(s=>s.u===u);
+    $('in-'+u).innerHTML=rows.map(s=>`
+      <div class="in-row" id="row-${s.id}">
+        <span class="lab">${s.b}<span class="hint">${s.cl.toFixed(1)} leads / lease</span></span>
+        <span class="field-wrap">
+          <button class="step-btn" data-step="-1" data-t="${s.id}" aria-label="decrease">&minus;</button>
+          <input class="u" type="number" id="u_${s.id}" value="0" min="0" inputmode="numeric" aria-label="${u} ${s.b} units">
+          <button class="step-btn" data-step="1" data-t="${s.id}" aria-label="increase">+</button>
+        </span>
+      </div>`).join('');
+  });
+}
+function buildMethod(){
+  $('methTitle').textContent=COPY.method_title;
+  $('methSteps').innerHTML=COPY.method_steps.map((s,i)=>`<div class="step"><span class="sn">${i+1}</span><span class="st">${s}</span></div>`).join('');
+  $('methCaveat').innerHTML=COPY.caveat;
+}
+function getU(id){const v=parseInt($('u_'+id).value);return isNaN(v)||v<0?0:v;}
+function recalc(){
+  const months=Math.max(1,parseInt($('timeline').value)||1);
+  const name=$('bname').value.trim()||'this portfolio';
+  let totU=0,totL=0;const uByType={Apartment:0,Townhouse:0,Villa:0};const seg=[];
+  SEG.forEach(s=>{
+    const n=getU(s.id);
+    const row=$('row-'+s.id); if(row)row.classList.toggle('filled',n>0);
+    if(n>0){const leads=n*s.cl;totU+=n;totL+=leads;uByType[s.u]+=n;seg.push({label:s.u+' '+s.b,n,cl:s.cl,leads});}
+  });
+  ['Apartment','Townhouse','Villa'].forEach(u=>$('bt-'+u).textContent=nf(uByType[u]));
+  $('r_units').textContent=nf(totU);
+  $('r_leads').textContent=nf(totL);
+  $('r_leads_sub').textContent='over '+months+' month'+(months>1?'s':'');
+  $('r_monthly').textContent=nf(totL/months);
+  $('r_blend').textContent=totU>0?(totL/totU).toFixed(1):'0';
+
+  if(totU>0){
+    $('resHeadline').innerHTML=`To lease <b>${nf(totU)}</b> units in <b>${name}</b> over <b>${months}</b> month${months>1?'s':''}, plan for approximately <b>${nf(totL)}</b> leads &mdash; about <b>${nf(totL/months)}</b> per month.`;
+    let h='<div class="seg-out-wrap"><table class="seg-out"><thead><tr><th><span class="micro">Segment</span></th><th class="r"><span class="micro">Units</span></th><th class="r"><span class="micro">Leads / lease</span></th><th class="r"><span class="micro">Leads needed</span></th><th class="r"><span class="micro">Per month</span></th></tr></thead><tbody>';
+    seg.forEach(r=>{h+=`<tr><td>${r.label}</td><td>${nf(r.n)}</td><td>${r.cl.toFixed(2)}</td><td>${nf(r.leads)}</td><td>${nf(r.leads/months)}</td></tr>`;});
+    h+=`<tr class="tot-row"><td>Total</td><td>${nf(totU)}</td><td>&mdash;</td><td>${nf(totL)}</td><td>${nf(totL/months)}</td></tr></tbody></table></div>`;
+    $('segOutHost').innerHTML=h;
+  }else{
+    $('resHeadline').innerHTML='';
+    $('segOutHost').innerHTML='<p class="empty-note">Enter a unit count above to see the leads required &mdash; or load the example.</p>';
+  }
+}
+function setAll(map){SEG.forEach(s=>$('u_'+s.id).value=map[s.id]||0);recalc();}
+
+// ===== TABS =====
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');$('pane-'+t.dataset.tab).classList.add('active');
+}));
+
+// ===== UX WIRING =====
+function wire(){
+  const inputs=SEG.map(s=>$('u_'+s.id));
+  inputs.forEach((inp,i)=>{
+    inp.addEventListener('focus',()=>inp.select());
+    inp.addEventListener('input',recalc);
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();(inputs[i+1]||inputs[0]).focus();}
+    });
+  });
+  document.querySelectorAll('.step-btn').forEach(b=>b.addEventListener('click',()=>{
+    const inp=$('u_'+b.dataset.t);const v=Math.max(0,(parseInt(inp.value)||0)+parseInt(b.dataset.step));
+    inp.value=v;recalc();
+  }));
+  $('timeline').addEventListener('input',recalc);
+  $('timeline').addEventListener('focus',()=>$('timeline').select());
+  $('bname').addEventListener('input',recalc);
+  $('btnReset').addEventListener('click',()=>{$('bname').value='Building A';$('timeline').value=12;setAll({});$('u_'+SEG[0].id).focus();});
+  $('btnExample').addEventListener('click',()=>{$('timeline').value=12;setAll(EXAMPLE);});
+}
+
+// ===== INIT =====
+buildBands();buildInputs();buildMethod();wire();setAll(EXAMPLE);
+</script>
