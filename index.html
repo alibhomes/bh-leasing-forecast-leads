@@ -159,7 +159,7 @@ table.seg-out tr.tot-row td{font-family:var(--display);color:var(--teal);border-
     <div class="brand"><span class="brand-mark"></span><span class="brand-name">betterhomes</span></div>
     <div class="masthead-meta">
       <div class="micro">Leads to Lease Forecast &middot; Portfolio Planning</div>
-      <div class="micro" style="opacity:.7">Confidential &middot; Prepared for Bright Start</div>
+      <div class="micro" style="opacity:.7">Confidential</div>
     </div>
   </div>
   <div class="brass-rule"></div>
@@ -177,7 +177,7 @@ table.seg-out tr.tot-row td{font-family:var(--display);color:var(--teal);border-
     <p class="lede">A simple view of recent leasing enquiries by unit type and bedroom size. It shows how much demand each segment has created, and the average number of leads needed to agree one lease.</p>
     <div class="reading-guide">
       <div class="rg-item"><span class="micro">Total leads</span><span style="font-size:12px;color:var(--ink-soft)">enquiries received in the past 6 months</span></div>
-      <div class="rg-item"><span class="micro">Avg to Close</span><span style="font-size:12px;color:var(--ink-soft)">average leads needed to agree one lease &middot; lower is better</span></div>
+      <div class="rg-item"><span class="micro">Close Rate</span><span style="font-size:12px;color:var(--ink-soft)">% of leads that turn into a signed lease &middot; higher is better</span></div>
     </div>
 
     <div class="band" id="band-Apartment"></div>
@@ -252,7 +252,7 @@ table.seg-out tr.tot-row td{font-family:var(--display);color:var(--teal);border-
         <div class="cell"><div class="val figure" id="r_units">0</div><span class="micro">Units to lease</span></div>
         <div class="cell"><div class="val figure" id="r_leads">0</div><span class="micro">Total leads required</span><div class="sub" id="r_leads_sub"></div></div>
         <div class="cell"><div class="val figure" id="r_monthly">0</div><span class="micro">Leads per month</span><div class="sub">across the timeline</div></div>
-        <div class="cell"><div class="val figure" id="r_blend">0</div><span class="micro">Leads to lease</span><div class="sub">average for this mix</div></div>
+        <div class="cell"><div class="val figure" id="r_blend">0%</div><span class="micro">Close Rate</span><div class="sub">average for this mix</div></div>
       </div>
 
       <div class="band">
@@ -289,8 +289,8 @@ const EXAMPLE={apt_studio:200,apt_1bed:100};
 const COPY={
   insights:{
     Apartment:"Apartments need the most lead volume, especially studios, 1-beds and 2-beds. The bright spot is the <b>3-bed apartment</b>, which has needed fewer leads to secure a lease.",
-    Townhouse:"Townhouses are steady but still need a healthy lead pipeline. Both 3-bed and 4-bed townhouses sit around seven to eight leads to lease.",
-    Villa:"Villas are the easiest to read: <b>3-bed villas need the fewest leads to lease</b>, while larger villas need more interest before a lease is agreed."
+    Townhouse:"Townhouses are steady but still need a healthy lead pipeline. Both 3-bed and 4-bed townhouses close at roughly a <b>13&ndash;14% rate</b>.",
+    Villa:"Villas are the easiest to read: <b>3-bed villas close at the highest rate, around 34%</b>, while larger villas convert more slowly and need more interest before a lease is agreed."
   },
   method_title:"How to read the forecast",
   method_steps:[
@@ -303,6 +303,8 @@ const COPY={
 
 const $=id=>document.getElementById(id);
 const nf=n=>Math.round(n).toLocaleString();
+const rate=cl=>cl>0?100/cl:0;
+const pf=cl=>rate(cl).toFixed(1)+'%';
 const effClass=cl=>cl<=4?'eff-best':cl>=7.5?'eff-heavy':'eff-mid';
 const effLabel=cl=>cl<=4?'Lower lead need':cl>=7.5?'Higher lead need':cl>=6?'Steady lead need':'Good lead need';
 const STORE_KEY='bh_leads_to_lease_scenarios_v1';
@@ -414,7 +416,7 @@ function renderArchive(){
 function pdfHtml(scenario){
   const totals=computeFromUnits(scenario.units||{},scenario.months||12);
   const date=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-  const rows=totals.seg.map(r=>`<tr><td>${esc(r.label)}</td><td>${nf(r.n)}</td><td>${r.cl.toFixed(2)}</td><td>${nf(r.leads)}</td><td>${nf(r.leads/totals.months)}</td></tr>`).join('');
+  const rows=totals.seg.map(r=>`<tr><td>${esc(r.label)}</td><td>${nf(r.n)}</td><td>${pf(r.cl)}</td><td>${nf(r.leads)}</td><td>${nf(r.leads/totals.months)}</td></tr>`).join('');
   return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(scenario.name||'Scenario')} - Leads to Lease Forecast</title>
   <style>
     body{font-family:Arial,sans-serif;color:#1A201E;margin:36px;line-height:1.45}
@@ -430,17 +432,17 @@ function pdfHtml(scenario){
     .note{border-top:1px solid #DAD6CC;margin-top:26px;padding-top:14px;font-size:12px;color:#5B635D}
   </style></head><body>
     <div class="brand">betterhomes</div>
-    <div class="micro">Leads to Lease Forecast &middot; Prepared for Bright Start &middot; ${date}</div>
+    <div class="micro">Leads to Lease Forecast &middot; ${date}</div>
     <h1>${esc(scenario.name||'Scenario')}</h1>
     <p class="lede">A simple planning summary showing how many leads may be needed to lease this unit mix over ${totals.months} month${totals.months>1?'s':''}.</p>
     <div class="kpis">
       <div class="kpi"><div class="val">${nf(totals.totU)}</div><div class="lab">Units to lease</div></div>
       <div class="kpi"><div class="val">${nf(totals.totL)}</div><div class="lab">Total leads required</div></div>
       <div class="kpi"><div class="val">${nf(totals.monthly)}</div><div class="lab">Leads per month</div></div>
-      <div class="kpi"><div class="val">${totals.totU?totals.blend.toFixed(1):'0'}</div><div class="lab">Leads to lease</div></div>
+      <div class="kpi"><div class="val">${totals.totU?pf(totals.blend):'0%'}</div><div class="lab">Close Rate</div></div>
     </div>
     <h2>Leads required by segment</h2>
-    <table><thead><tr><th>Segment</th><th>Units</th><th>Leads to lease</th><th>Leads needed</th><th>Per month</th></tr></thead><tbody>${rows}</tbody></table>
+    <table><thead><tr><th>Segment</th><th>Units</th><th>Close Rate</th><th>Leads needed</th><th>Per month</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="note">Based on 30,785 betterhomes leasing leads from the past 6 months. Use as a planning guide, build in a sensible buffer, and refresh the benchmark each quarter.</p>
   </body></html>`;
 }
@@ -465,12 +467,12 @@ function buildBands(){
     h+=`<table class="seg-table"><thead><tr>
       <th><span class="micro">Bedroom</span></th>
       <th class="r"><span class="micro">Total leads</span></th>
-      <th class="r"><span class="micro">Avg to Close</span></th></tr></thead><tbody>`;
+      <th class="r"><span class="micro">Close Rate</span></th></tr></thead><tbody>`;
     rows.forEach(s=>{
       h+=`<tr>
         <td class="seg-bed" data-l="Bedroom">${s.b}</td>
         <td class="seg-num" data-l="Total leads">${nf(s.t)}</td>
-        <td class="seg-close" data-l="Avg to Close"><span class="cv">${s.cl.toFixed(2)}</span><br><span class="eff-tag ${effClass(s.cl)}">${effLabel(s.cl)}</span></td>
+        <td class="seg-close" data-l="Close Rate"><span class="cv">${pf(s.cl)}</span><br><span class="eff-tag ${effClass(s.cl)}">${effLabel(s.cl)}</span></td>
       </tr>`;
     });
     h+='</tbody></table>';
@@ -484,7 +486,7 @@ function buildInputs(){
     const rows=SEG.filter(s=>s.u===u);
     $('in-'+u).innerHTML=rows.map(s=>`
       <div class="in-row" id="row-${s.id}">
-        <span class="lab">${s.b}<span class="hint">${s.cl.toFixed(1)} leads to lease</span></span>
+        <span class="lab">${s.b}<span class="hint">${pf(s.cl)} close rate</span></span>
         <span class="field-wrap">
           <button class="step-btn" data-step="-1" data-t="${s.id}" aria-label="decrease">&minus;</button>
           <input class="u" type="number" id="u_${s.id}" value="0" min="0" inputmode="numeric" aria-label="${u} ${s.b} units">
@@ -513,12 +515,12 @@ function recalc(){
   $('r_leads').textContent=nf(totals.totL);
   $('r_leads_sub').textContent='over '+months+' month'+(months>1?'s':'');
   $('r_monthly').textContent=nf(totals.monthly);
-  $('r_blend').textContent=totals.totU>0?totals.blend.toFixed(1):'0';
+  $('r_blend').textContent=totals.totU>0?pf(totals.blend):'0%';
 
   if(totals.totU>0){
     $('resHeadline').innerHTML=`To lease <b>${nf(totals.totU)}</b> units for <b>${esc(name)}</b> over <b>${months}</b> month${months>1?'s':''}, the team should plan for around <b>${nf(totals.totL)}</b> leads, or about <b>${nf(totals.monthly)}</b> per month.`;
-    let h='<div class="seg-out-wrap"><table class="seg-out"><thead><tr><th><span class="micro">Segment</span></th><th class="r"><span class="micro">Units</span></th><th class="r"><span class="micro">Leads to lease</span></th><th class="r"><span class="micro">Leads needed</span></th><th class="r"><span class="micro">Per month</span></th></tr></thead><tbody>';
-    totals.seg.forEach(r=>{h+=`<tr><td>${esc(r.label)}</td><td>${nf(r.n)}</td><td>${r.cl.toFixed(2)}</td><td>${nf(r.leads)}</td><td>${nf(r.leads/months)}</td></tr>`;});
+    let h='<div class="seg-out-wrap"><table class="seg-out"><thead><tr><th><span class="micro">Segment</span></th><th class="r"><span class="micro">Units</span></th><th class="r"><span class="micro">Close Rate</span></th><th class="r"><span class="micro">Leads needed</span></th><th class="r"><span class="micro">Per month</span></th></tr></thead><tbody>';
+    totals.seg.forEach(r=>{h+=`<tr><td>${esc(r.label)}</td><td>${nf(r.n)}</td><td>${pf(r.cl)}</td><td>${nf(r.leads)}</td><td>${nf(r.leads/months)}</td></tr>`;});
     h+=`<tr class="tot-row"><td>Total</td><td>${nf(totals.totU)}</td><td>&mdash;</td><td>${nf(totals.totL)}</td><td>${nf(totals.monthly)}</td></tr></tbody></table></div>`;
     $('segOutHost').innerHTML=h;
   }else{
